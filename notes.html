@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Notes</title><style>
+:root{--bg:#f7f8fa;--card:#fff;--ink:#1d2330;--mute:#5d6678;--line:#e3e7ee;--acc:#3b5bdb;--accbg:#edf1ff;
+--note:#fff8e6;--noteb:#f0b429;--warn:#fdecec;--warnb:#e03131;--good:#e9f8ee;--code:#f1f3f7}
+@media(prefers-color-scheme:dark){:root{--bg:#12151c;--card:#1a1f2a;--ink:#e6e9f0;--mute:#9aa4b8;--line:#2b3242;
+--acc:#8da2ff;--accbg:#222a45;--note:#2d2716;--noteb:#c99a2e;--warn:#321c1c;--warnb:#e66;--good:#173323;--code:#232a38}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+nav{position:sticky;top:0;z-index:10;background:var(--card);border-bottom:1px solid var(--line);
+display:flex;gap:4px;padding:8px 16px;overflow-x:auto;align-items:center}
+nav b{margin-right:12px;white-space:nowrap}
+nav a{padding:6px 12px;border-radius:8px;color:var(--mute);text-decoration:none;font-size:14px;white-space:nowrap}
+nav a:hover{background:var(--accbg);color:var(--acc)}
+nav a.cur{background:var(--accbg);color:var(--acc);font-weight:600}
+main{max-width:980px;margin:0 auto;padding:32px 20px 80px}
+h1{font-size:2rem;line-height:1.25;margin:0 0 .6em}
+h2{font-size:1.4rem;margin:2.2em 0 .7em;padding-bottom:.3em;border-bottom:2px solid var(--line)}
+h3{font-size:1.1rem;margin:1.6em 0 .5em}
+a{color:var(--acc)}
+p{margin:.7em 0}
+ul,ol{padding-left:1.4em}
+li{margin:.35em 0}
+li::marker{color:var(--acc)}
+code{background:var(--code);padding:.1em .4em;border-radius:5px;font:.88em ui-monospace,SFMono-Regular,Menlo,monospace}
+pre{background:var(--code);border:1px solid var(--line);border-radius:10px;padding:14px 16px;overflow-x:auto;line-height:1.5}
+pre code{background:none;padding:0;font-size:.85em}
+img{max-width:100%;height:auto;background:#fff;border:1px solid var(--line);border-radius:10px;padding:6px;display:block;margin:1em auto}
+.tw{overflow-x:auto;margin:1em 0;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+table{border-collapse:collapse;width:100%;font-size:.88rem}
+th{background:var(--accbg);color:var(--acc);text-align:left;font-weight:600;white-space:nowrap}
+th,td{padding:8px 12px;border-bottom:1px solid var(--line)}
+tbody tr:nth-child(even){background:color-mix(in srgb,var(--line) 25%,transparent)}
+tbody tr:hover{background:var(--accbg)}
+tbody tr:last-child td{border-bottom:none}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tr.hl{background:var(--good)!important}
+td.bad{color:var(--warnb);font-weight:600}
+td.ok{color:#2b8a3e;font-weight:600}
+@media(prefers-color-scheme:dark){td.ok{color:#69db7c}}
+li.note,li.pitfall{list-style:none;margin-left:-1.4em;padding:10px 14px;border-left:4px solid var(--noteb);background:var(--note);border-radius:0 8px 8px 0}
+li.pitfall{border-color:var(--warnb);background:var(--warn)}
+p.note{padding:10px 14px;border-left:4px solid var(--noteb);background:var(--note);border-radius:0 8px 8px 0}
+ol.insights{list-style:none;padding:0;counter-reset:i}
+ol.insights>li{counter-increment:i;background:var(--card);border:1px solid var(--line);border-radius:12px;
+padding:14px 18px 14px 58px;position:relative;margin:12px 0}
+ol.insights>li::before{content:counter(i);position:absolute;left:16px;top:14px;width:28px;height:28px;border-radius:50%;
+background:var(--acc);color:var(--card);font-weight:700;display:grid;place-items:center;font-size:.9rem}
+footer{color:var(--mute);font-size:.8rem;text-align:center;margin-top:3em}
+</style></head>
+<body><nav><b>Quantization study</b><a href="README.html">Overview</a><a href="summary.html">Summary</a><a href="methodology.html">Methodology</a><a href="results.html">Results</a><a href="notes.html" class=cur>Notes</a></nav><main><h1>Notes</h1>
+<h2>Step 0: environment</h2>
+<ul>
+<li>Hardware: MacBook Pro M3 Pro, 18 GB unified memory, Metal backend.</li>
+<li>Model: Qwen3-4B (BF16 ~7.5 GB) as main model; Qwen3-8B in BF16 (~16 GB) does not fit in the GPU-wired memory (~12-13 GB). Qwen3-1.7B for quick experiments.</li>
+<li>llama.cpp built from source (commit 690b87d) with -DGGML_METAL=ON in ./llama.cpp/build/bin</li>
+<li>Python 3.13 venv in ./.venv (torch 2.15, transformers, numpy, gguf, datasets, matplotlib, sentencepiece)</li>
+<li>Data: data/wiki.test.raw (perplexity), data/wiki.train.raw (imatrix calibration, step 4). The dataset id <code>wikitext</code> no longer works; use <code>Salesforce/wikitext</code>.</li>
+</ul>
+<h2>Step 1: absmax basics</h2>
+<ul>
+<li>One scale per group: <code>s = max|x|/(2^(b-1)-1)</code>. A single outlier determines the resolution of the whole group.</li>
+<li>int4 MSE on gate_proj (6144x2048): tensor 7.4e-4, channel 3.9e-5 (19x better), block 32 1.4e-5 (52x better than tensor).</li>
+<li>Biggest jump: tensor -&gt; channel (rows have very different scales). After that the gain shrinks with each halving of the block.</li>
+<li>bpw rises with smaller blocks: <code>(b*B+16)/B</code>. Block 32 int4 = 4.5 bpw, block 16 = 5.0.</li>
+<li>Outlier block: max|w|=0.375 at median 0.0066 -&gt; 29/32 weights become 0 in int4.</li>
+</ul>
+<h2>Step 2: Q8_0 and Q4_0</h2>
+<ul>
+<li>Q8_0: 34 bytes/block (fp16 d + 32 int8) = 8.5 bpw. Q4_0: 18 bytes (fp16 d + 16 bytes) = 4.5 bpw.</li>
+<li>Q4_0: d = max/-8 (max WITH sign), q = clamp(floor(x/d + 8.5), 0..15), x̂ = (q-8)*d. Uses all 16 levels, step max/8 instead of max/7: MSE 1.28x lower than symmetric int4 (1.12e-5 vs 1.42e-5).</li>
+<li>Nibble packing: byte j = elem j (low nibble) + elem j+16 (high nibble), so not neighbouring elements.</li>
+<li>Own implementation is byte-for-byte identical to gguf.quants (100%) for both formats.</li>
+<li>(s·q)·x = s·(q·x): integer sum per block, one float multiplication at the end.</li>
+</ul>
+<h2>Step 3: GGUF and llama.cpp (Qwen3-4B)</h2>
+<ul>
+<li>Conversion requires <code>sentencepiece</code> in the venv (the converter tries that tokenizer first).</li>
+<li>Q4_K_M = 4.95 bpw, not 4.5: half of attn_v and ffn_down (layers 0-3, every 3rd, last 6) and token_embd (tied with output) are Q6_K; norms stay F32.</li>
+<li>Quality: Q8_0/Q6_K/Q5_K_M are practically equal to F16 (ΔPPL &lt;= 0.3%, KLD &lt;= 0.017); Q4_K_M +1.9% PPL, KLD 0.062, 90% same top-1; Q3_K_M +22%; Q2_K +178% (unusable). The knee is between Q4 and Q3.</li>
+<li>Speed: tg ~ 1/size down to Q4_K_M (effective bandwidth ~120 GB/s = tg x size), pp stays flat (~480-560 t/s, compute-bound). Q3_K_M/Q2_K reach only ~78 GB/s: dequantization becomes the bottleneck.</li>
+<li class="pitfall">Pitfall: PPL(base) in KL mode (13.97) is not equal to the real F16 PPL (14.14). Use a separate F16 run as baseline.</li>
+</ul>
+<h2>Step 4: imatrix</h2>
+<ul>
+<li>imatrix = mean x[j]^2 per input column over calibration text (magnitude AND frequency of activations). quantize minimizes a weighted error instead of plain MSE.</li>
+<li>Built on 200 chunks of WikiText-2 train; evaluated on test (100 chunks). KLD reduction with imatrix: Q8_0 0%, Q6_K 19%, Q4_K_M 32%, Q3_K_M 35%, Q2_K 60% (PPL 39.2 -&gt; 16.3). IQ2_XS (2.69 bpw, requires imatrix): PPL 19.98, KLD 0.76.</li>
+<li>The gain grows as bits shrink: fewer levels -&gt; the choice of which weights get precision matters more.</li>
+<li class="note">Note: Q4_K_M and Q6_K went up slightly in PPL (14.40 -&gt; 14.69; 14.18 -&gt; 14.20) while KLD dropped. PPL only looks at the correct token; KLD is more reliable here. Cause not investigated.</li>
+</ul>
+<h2>Step 5A: NF4 vs uniform</h2>
+<ul>
+<li>NF4 = 16 levels at quantiles of N(0,1), block first normalized by absmax. Only MSE on weights measured (no PPL; NF4 is not in llama.cpp).</li>
+<li>Block 32: NF4 ≈ Q4_0 (MSE ratio 0.99). Block 64: NF4 11% lower MSE (0.89), up to 17% for down_proj. Why it shrinks at block 32 is a hypothesis (smaller blocks are flatter distributed, Q4_0 uses the -8 level trick), not tested.</li>
+<li>Weights are not exactly normal: kurtosis 3.4-4.6 (normal = 3).</li>
+<li>Double quantization (scales to 8 bit): identical MSE, bpw 4.25 -&gt; 4.13.</li>
+<li>NF4 block 64 + DQ (4.13 bpw) has ~10% higher MSE than Q4_0 block 32 (4.50 bpw) at 8% fewer bits.</li>
+</ul>
+<h2>Step 5B: GPTQ-light</h2>
+<ul>
+<li>GPTQ quantizes column by column and pushes the rounding error through H^-1 (H = X·Xt from calibration activations) onto the not-yet-rounded columns. The goal is minimal OUTPUT error ‖(W-Ŵ)X‖², not minimal weight error.</li>
+<li>On L10 gate_proj (int4, block 32): weight MSE 1.43x HIGHER than RTN (1.4e-5 -&gt; 2.0e-5), but output error (test) 0.45x, so 2.2x lower. The RTN weight MSE matches step 1 exactly (1.424e-5), a sanity check.</li>
+<li>Overfit signal: GPTQ's relative output error is 1.35e-3 on train activations and 1.77e-3 on test (RTN: 3.87e-3 vs 3.92e-3, no gap). Same risk as imatrix: gained on calibration data, slightly less on new data.</li>
+<li>Limitations: one layer, per-layer error, no end-to-end PPL; activations come from the F32 model (no accumulated quantization error from earlier layers).</li>
+</ul></main></body></html>

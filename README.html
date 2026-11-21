@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LLM quantization study (Qwen3-4B, llama.cpp, Apple Silicon)</title><style>
+:root{--bg:#f7f8fa;--card:#fff;--ink:#1d2330;--mute:#5d6678;--line:#e3e7ee;--acc:#3b5bdb;--accbg:#edf1ff;
+--note:#fff8e6;--noteb:#f0b429;--warn:#fdecec;--warnb:#e03131;--good:#e9f8ee;--code:#f1f3f7}
+@media(prefers-color-scheme:dark){:root{--bg:#12151c;--card:#1a1f2a;--ink:#e6e9f0;--mute:#9aa4b8;--line:#2b3242;
+--acc:#8da2ff;--accbg:#222a45;--note:#2d2716;--noteb:#c99a2e;--warn:#321c1c;--warnb:#e66;--good:#173323;--code:#232a38}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+nav{position:sticky;top:0;z-index:10;background:var(--card);border-bottom:1px solid var(--line);
+display:flex;gap:4px;padding:8px 16px;overflow-x:auto;align-items:center}
+nav b{margin-right:12px;white-space:nowrap}
+nav a{padding:6px 12px;border-radius:8px;color:var(--mute);text-decoration:none;font-size:14px;white-space:nowrap}
+nav a:hover{background:var(--accbg);color:var(--acc)}
+nav a.cur{background:var(--accbg);color:var(--acc);font-weight:600}
+main{max-width:980px;margin:0 auto;padding:32px 20px 80px}
+h1{font-size:2rem;line-height:1.25;margin:0 0 .6em}
+h2{font-size:1.4rem;margin:2.2em 0 .7em;padding-bottom:.3em;border-bottom:2px solid var(--line)}
+h3{font-size:1.1rem;margin:1.6em 0 .5em}
+a{color:var(--acc)}
+p{margin:.7em 0}
+ul,ol{padding-left:1.4em}
+li{margin:.35em 0}
+li::marker{color:var(--acc)}
+code{background:var(--code);padding:.1em .4em;border-radius:5px;font:.88em ui-monospace,SFMono-Regular,Menlo,monospace}
+pre{background:var(--code);border:1px solid var(--line);border-radius:10px;padding:14px 16px;overflow-x:auto;line-height:1.5}
+pre code{background:none;padding:0;font-size:.85em}
+img{max-width:100%;height:auto;background:#fff;border:1px solid var(--line);border-radius:10px;padding:6px;display:block;margin:1em auto}
+.tw{overflow-x:auto;margin:1em 0;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+table{border-collapse:collapse;width:100%;font-size:.88rem}
+th{background:var(--accbg);color:var(--acc);text-align:left;font-weight:600;white-space:nowrap}
+th,td{padding:8px 12px;border-bottom:1px solid var(--line)}
+tbody tr:nth-child(even){background:color-mix(in srgb,var(--line) 25%,transparent)}
+tbody tr:hover{background:var(--accbg)}
+tbody tr:last-child td{border-bottom:none}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tr.hl{background:var(--good)!important}
+td.bad{color:var(--warnb);font-weight:600}
+td.ok{color:#2b8a3e;font-weight:600}
+@media(prefers-color-scheme:dark){td.ok{color:#69db7c}}
+li.note,li.pitfall{list-style:none;margin-left:-1.4em;padding:10px 14px;border-left:4px solid var(--noteb);background:var(--note);border-radius:0 8px 8px 0}
+li.pitfall{border-color:var(--warnb);background:var(--warn)}
+p.note{padding:10px 14px;border-left:4px solid var(--noteb);background:var(--note);border-radius:0 8px 8px 0}
+ol.insights{list-style:none;padding:0;counter-reset:i}
+ol.insights>li{counter-increment:i;background:var(--card);border:1px solid var(--line);border-radius:12px;
+padding:14px 18px 14px 58px;position:relative;margin:12px 0}
+ol.insights>li::before{content:counter(i);position:absolute;left:16px;top:14px;width:28px;height:28px;border-radius:50%;
+background:var(--acc);color:var(--card);font-weight:700;display:grid;place-items:center;font-size:.9rem}
+footer{color:var(--mute);font-size:.8rem;text-align:center;margin-top:3em}
+</style></head>
+<body><nav><b>Quantization study</b><a href="README.html" class=cur>Overview</a><a href="summary.html">Summary</a><a href="methodology.html">Methodology</a><a href="results.html">Results</a><a href="notes.html">Notes</a></nav><main><h1>LLM quantization study (Qwen3-4B, llama.cpp, Apple Silicon)</h1>
+<p>Hands-on study of LLM weight quantization: absmax basics, Q8_0/Q4_0 from scratch, GGUF K-quants, imatrix, NF4 and GPTQ.</p>
+<ul>
+<li><a href="summary.html"><code>summary.html</code></a>: results, chart, when to pick which type, key insights</li>
+<li><a href="methodology.html"><code>methodology.html</code></a>: research question, metrics, hypotheses, limitations</li>
+<li><a href="results.html"><code>results.html</code></a>: raw result tables; <a href="notes.html"><code>notes.html</code></a>: lessons per step</li>
+<li><code>experiments/</code>: one script per experiment; <code>logs/</code>: raw llama.cpp output</li>
+</ul>
+<h2>Rebuilding the environment</h2>
+<p>The large folders are not in git (<code>.venv/</code>, <code>llama.cpp/</code>, <code>models/</code>, <code>gguf/</code>, <code>data/</code>). To rerun:</p>
+<pre><code class="language-bash">brew install cmake
+git clone https://github.com/ggml-org/llama.cpp &amp;&amp; git -C llama.cpp checkout 690b87d   # needs full history, not --depth 1
+cmake -S llama.cpp -B llama.cpp/build -DGGML_METAL=ON -DCMAKE_BUILD_TYPE=Release
+cmake --build llama.cpp/build -j --target llama-quantize llama-perplexity llama-bench llama-imatrix llama-cli
+uv venv --python 3.13 .venv
+uv pip install --python .venv/bin/python torch transformers numpy gguf datasets matplotlib huggingface_hub sentencepiece protobuf
+.venv/bin/hf download Qwen/Qwen3-1.7B --local-dir models/Qwen3-1.7B     # ~3.8 GB
+.venv/bin/hf download Qwen/Qwen3-4B   --local-dir models/Qwen3-4B       # ~7.5 GB
+.venv/bin/python llama.cpp/convert_hf_to_gguf.py models/Qwen3-4B --outtype f16 --outfile gguf/qwen3-4b-f16.gguf
+</code></pre>
+<p>WikiText-2 (<code>Salesforce/wikitext</code>, config <code>wikitext-2-raw-v1</code>) is written to <code>data/wiki.{test,train}.raw</code> as one raw text file per split. Then run <code>experiments/step*.py|sh</code> in order (about 45 GB of disk for all GGUF variants and logits).</p></main></body></html>

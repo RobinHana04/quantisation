@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Summary: LLM quantization with Qwen3-4B on an M3 Pro</title><style>
+:root{--bg:#f7f8fa;--card:#fff;--ink:#1d2330;--mute:#5d6678;--line:#e3e7ee;--acc:#3b5bdb;--accbg:#edf1ff;
+--note:#fff8e6;--noteb:#f0b429;--warn:#fdecec;--warnb:#e03131;--good:#e9f8ee;--code:#f1f3f7}
+@media(prefers-color-scheme:dark){:root{--bg:#12151c;--card:#1a1f2a;--ink:#e6e9f0;--mute:#9aa4b8;--line:#2b3242;
+--acc:#8da2ff;--accbg:#222a45;--note:#2d2716;--noteb:#c99a2e;--warn:#321c1c;--warnb:#e66;--good:#173323;--code:#232a38}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+nav{position:sticky;top:0;z-index:10;background:var(--card);border-bottom:1px solid var(--line);
+display:flex;gap:4px;padding:8px 16px;overflow-x:auto;align-items:center}
+nav b{margin-right:12px;white-space:nowrap}
+nav a{padding:6px 12px;border-radius:8px;color:var(--mute);text-decoration:none;font-size:14px;white-space:nowrap}
+nav a:hover{background:var(--accbg);color:var(--acc)}
+nav a.cur{background:var(--accbg);color:var(--acc);font-weight:600}
+main{max-width:980px;margin:0 auto;padding:32px 20px 80px}
+h1{font-size:2rem;line-height:1.25;margin:0 0 .6em}
+h2{font-size:1.4rem;margin:2.2em 0 .7em;padding-bottom:.3em;border-bottom:2px solid var(--line)}
+h3{font-size:1.1rem;margin:1.6em 0 .5em}
+a{color:var(--acc)}
+p{margin:.7em 0}
+ul,ol{padding-left:1.4em}
+li{margin:.35em 0}
+li::marker{color:var(--acc)}
+code{background:var(--code);padding:.1em .4em;border-radius:5px;font:.88em ui-monospace,SFMono-Regular,Menlo,monospace}
+pre{background:var(--code);border:1px solid var(--line);border-radius:10px;padding:14px 16px;overflow-x:auto;line-height:1.5}
+pre code{background:none;padding:0;font-size:.85em}
+img{max-width:100%;height:auto;background:#fff;border:1px solid var(--line);border-radius:10px;padding:6px;display:block;margin:1em auto}
+.tw{overflow-x:auto;margin:1em 0;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+table{border-collapse:collapse;width:100%;font-size:.88rem}
+th{background:var(--accbg);color:var(--acc);text-align:left;font-weight:600;white-space:nowrap}
+th,td{padding:8px 12px;border-bottom:1px solid var(--line)}
+tbody tr:nth-child(even){background:color-mix(in srgb,var(--line) 25%,transparent)}
+tbody tr:hover{background:var(--accbg)}
+tbody tr:last-child td{border-bottom:none}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tr.hl{background:var(--good)!important}
+td.bad{color:var(--warnb);font-weight:600}
+td.ok{color:#2b8a3e;font-weight:600}
+@media(prefers-color-scheme:dark){td.ok{color:#69db7c}}
+li.note,li.pitfall{list-style:none;margin-left:-1.4em;padding:10px 14px;border-left:4px solid var(--noteb);background:var(--note);border-radius:0 8px 8px 0}
+li.pitfall{border-color:var(--warnb);background:var(--warn)}
+p.note{padding:10px 14px;border-left:4px solid var(--noteb);background:var(--note);border-radius:0 8px 8px 0}
+ol.insights{list-style:none;padding:0;counter-reset:i}
+ol.insights>li{counter-increment:i;background:var(--card);border:1px solid var(--line);border-radius:12px;
+padding:14px 18px 14px 58px;position:relative;margin:12px 0}
+ol.insights>li::before{content:counter(i);position:absolute;left:16px;top:14px;width:28px;height:28px;border-radius:50%;
+background:var(--acc);color:var(--card);font-weight:700;display:grid;place-items:center;font-size:.9rem}
+footer{color:var(--mute);font-size:.8rem;text-align:center;margin-top:3em}
+</style></head>
+<body><nav><b>Quantization study</b><a href="README.html">Overview</a><a href="summary.html" class=cur>Summary</a><a href="methodology.html">Methodology</a><a href="results.html">Results</a><a href="notes.html">Notes</a></nav><main><h1>Summary: LLM quantization with Qwen3-4B on an M3 Pro</h1>
+<p>Model: Qwen3-4B (F16 baseline 8.05 GB), llama.cpp (commit <code>690b87d</code>, Metal), 18 GB unified memory.
+Evaluation: WikiText-2 <strong>test</strong>, ctx 512, 100 chunks. Calibration (imatrix): WikiText-2 <strong>train</strong>, 200 chunks.
+Scripts are in <code>experiments/</code>, raw tables in <a href="results.html"><code>results.html</code></a>, per-step lessons in <a href="notes.html"><code>notes.html</code></a>, method in <a href="methodology.html"><code>methodology.html</code></a>.</p>
+<h2>1. Result</h2>
+<p><img alt="Size vs perplexity and KL divergence, with and without imatrix" src="result.png" /></p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>variant</th>
+<th class="n">GB</th>
+<th class="n">bpw</th>
+<th class="n">PPL</th>
+<th class="n">ΔPPL</th>
+<th class="n">KLD</th>
+<th class="n">same top-1</th>
+<th class="n">pp t/s</th>
+<th class="n">tg t/s</th>
+<th class="n">tg vs F16</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>F16</td>
+<td class="n">8.05</td>
+<td class="n">16.00</td>
+<td class="n">14.14</td>
+<td class="n">–</td>
+<td class="n">0</td>
+<td class="n">100%</td>
+<td class="n">557</td>
+<td class="n">15.1</td>
+<td class="n">1.0×</td>
+</tr>
+<tr>
+<td>Q8_0</td>
+<td class="n">4.27</td>
+<td class="n">8.50</td>
+<td class="n">14.18</td>
+<td class="n">+0.3%</td>
+<td class="n">0.0005</td>
+<td class="n">99.0%</td>
+<td class="n">533</td>
+<td class="n">28.2</td>
+<td class="n">1.9×</td>
+</tr>
+<tr>
+<td>Q6_K</td>
+<td class="n">3.30</td>
+<td class="n">6.56</td>
+<td class="n">14.18</td>
+<td class="n">+0.3%</td>
+<td class="n">0.0058</td>
+<td class="n">96.6%</td>
+<td class="n">506</td>
+<td class="n">36.5</td>
+<td class="n">2.4×</td>
+</tr>
+<tr>
+<td>Q5_K_M</td>
+<td class="n">2.88</td>
+<td class="n">5.73</td>
+<td class="n">14.11</td>
+<td class="n">−0.2% (noise)</td>
+<td class="n">0.0174</td>
+<td class="n">94.5%</td>
+<td class="n">480</td>
+<td class="n">37.0</td>
+<td class="n">2.5×</td>
+</tr>
+<tr>
+<td>Q4_K_M</td>
+<td class="n">2.49</td>
+<td class="n">4.95</td>
+<td class="n">14.40</td>
+<td class="n">+1.9%</td>
+<td class="n">0.0621</td>
+<td class="n">90.2%</td>
+<td class="n">514</td>
+<td class="n">44.9</td>
+<td class="n">3.0×</td>
+</tr>
+<tr>
+<td>Q3_K_M</td>
+<td class="n">2.07</td>
+<td class="n">4.12</td>
+<td class="n">17.30</td>
+<td class="n">+22%</td>
+<td class="n">0.2158</td>
+<td class="n">82.7%</td>
+<td class="n">491</td>
+<td class="n">37.8</td>
+<td class="n">2.5×</td>
+</tr>
+<tr>
+<td>Q2_K</td>
+<td class="n">1.66</td>
+<td class="n">3.31</td>
+<td class="n">39.24</td>
+<td class="n">+178%</td>
+<td class="n">1.0129</td>
+<td class="n">65.2%</td>
+<td class="n">505</td>
+<td class="n">47.3</td>
+<td class="n">3.1×</td>
+</tr>
+</tbody>
+</table></div>
+<p>With imatrix (same file size, apart from a few MB):</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>type</th>
+<th>PPL without → with</th>
+<th>KLD without → with</th>
+<th class="n">KLD reduction</th>
+<th>same top-1 without → with</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Q8_0</td>
+<td>14.18 → 14.18</td>
+<td>0.0005 → 0.0005</td>
+<td class="n">0%</td>
+<td>99.0 → 99.0</td>
+</tr>
+<tr>
+<td>Q6_K</td>
+<td>14.18 → 14.20</td>
+<td>0.0058 → 0.0047</td>
+<td class="n">19%</td>
+<td>96.6 → 96.9</td>
+</tr>
+<tr>
+<td>Q4_K_M</td>
+<td>14.40 → 14.69</td>
+<td>0.0621 → 0.0422</td>
+<td class="n">32%</td>
+<td>90.2 → 91.8</td>
+</tr>
+<tr>
+<td>Q3_K_M</td>
+<td>17.30 → 15.21</td>
+<td>0.2158 → 0.1403</td>
+<td class="n">35%</td>
+<td>82.7 → 85.2</td>
+</tr>
+<tr>
+<td>Q2_K</td>
+<td>39.24 → 16.33</td>
+<td>1.0129 → 0.4039</td>
+<td class="n">60%</td>
+<td>65.2 → 75.1</td>
+</tr>
+<tr>
+<td>IQ2_XS (2.69 bpw, 1.35 GB)</td>
+<td>19.98</td>
+<td>0.7626</td>
+<td class="n">n/a</td>
+<td>65.8</td>
+</tr>
+</tbody>
+</table></div>
+<p class="note">Note for Q4_K_M and Q6_K: PPL went up slightly with imatrix while KLD went down. Cause not investigated.</p>
+<h2>2. When do I pick what?</h2>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>type</th>
+<th>pick it when</th>
+<th>rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>F16</strong></td>
+<td>you need a reference (KL baseline) or memory is certainly sufficient</td>
+<td>8 GB, 15 t/s</td>
+</tr>
+<tr>
+<td><strong>Q8_0</strong></td>
+<td>you want no quality risk and 4.3 GB fits</td>
+<td>KLD 0.0005, practically indistinguishable from F16; imatrix does nothing</td>
+</tr>
+<tr>
+<td><strong>Q6_K</strong></td>
+<td>rarely: intermediate step</td>
+<td>KLD 0.006, but Q5_K_M is smaller for practically the same quality</td>
+</tr>
+<tr>
+<td><strong>Q5_K_M</strong></td>
+<td>you want quality without thinking about it</td>
+<td>2.9 GB, KLD 0.017, 94.5% same top-1</td>
+</tr>
+<tr class="hl">
+<td><strong>Q4_K_M + imatrix</strong></td>
+<td><strong>default choice</strong></td>
+<td>2.5 GB (3.2× smaller), 3× faster tg, +1.9 to +3.9% PPL, KLD 0.04, 92% same top-1</td>
+</tr>
+<tr>
+<td><strong>Q3_K_M + imatrix</strong></td>
+<td>memory is really too tight for Q4</td>
+<td>+7.6% PPL with imatrix; +22% without</td>
+</tr>
+<tr>
+<td><strong>Q2_K / IQ2_XS + imatrix</strong></td>
+<td>emergency or experiment only</td>
+<td>Q2_K only works with imatrix (PPL 39 → 16); expect noticeably worse answers</td>
+</tr>
+<tr>
+<td><strong>NF4 (bitsandbytes)</strong></td>
+<td>you work in PyTorch/CUDA rather than GGUF</td>
+<td>cannot run on this machine; only an MSE comparison was done</td>
+</tr>
+<tr>
+<td><strong>GPTQ/AWQ</strong></td>
+<td>you have a GPU pipeline and want a better 4-bit point</td>
+<td>only one layer of GPTQ reproduced; no end-to-end comparison</td>
+</tr>
+</tbody>
+</table></div>
+<h2>3. The five most important insights</h2>
+<ol class="insights">
+<li>
+<p><strong>"N-bit" says nothing about the storage cost; look at bpw.</strong> Every block has its own scale: <code>bpw = b + 16/B</code>. Q4_0 is 4.5 bpw, Q4_K 4.5 with quantized sub-scales, and Q4_K_M 4.95 because the recipe puts <code>attn_v</code>/<code>ffn_down</code> (half of the layers) and <code>token_embd</code> on Q6_K. Compare methods only on a common axis: file size or bpw, never on the name.</p>
+</li>
+<li>
+<p><strong>A single outlier determines the resolution of a whole group.</strong> The scale is <code>max|x|/(2^(b−1)−1)</code>, so in the worst block of 32 (max 0.375, median 0.0066) 29 of the 32 weights became 0. Granularity works in steps: tensor → channel gave 19× lower MSE, after that ~1.25× per halving of the block, against 16/B extra bits. At equal bpw, Q4_0 still reached 1.28× lower MSE than symmetric int4, purely by using all 16 levels and a step of <code>max/8</code>.</p>
+</li>
+<li>
+<p><strong>Quality is non-linear in bits, with a knee between Q4 and Q3.</strong> Down to Q5_K_M the damage is ≤ 0.017 KLD; Q4_K_M is slightly noticeable (KLD 0.06); Q3_K_M and Q2_K are not (0.22 and 1.0). KLD falls roughly log-linearly with size (see the right-hand chart). So measure <strong>KLD against F16</strong> next to PPL: PPL is noise of ±0.3 absolute on 100 chunks (Q5_K_M looks "better than F16"), while KLD ranked all six variants correctly.</p>
+</li>
+<li>
+<p><strong>Token generation is bandwidth-bound, prompt processing is compute-bound.</strong> One token reads each weight matrix once (≈2 FLOPs per weight): <code>tg ≈ bandwidth / file size</code>, here ≈ 120 GB/s (F16 15.1 t/s, Q8_0 28.2, Q4_K_M 44.9). pp reuses every weight for 512 tokens and stayed flat (480–557 t/s; F16 is even the fastest, since there is nothing to unpack). Below ~4 bits Q3_K_M and Q2_K reached only ~78 GB/s: unpacking the bits becomes the bottleneck, so Q3_K_M is slower than Q4_K_M despite a smaller file.</p>
+</li>
+<li>
+<p><strong>Minimize the output error, not the weight error.</strong> The imatrix weights columns by the mean of <code>x[j]²</code> (magnitude and frequency of the activation) and turned out to be nearly free: −60% KLD for Q2_K, −32% for Q4_K_M, 0% for Q8_0, because with 256 levels there is nothing to choose. GPTQ goes further and on one layer gives a 2.2× lower output error at a 1.43× <em>higher</em> weight MSE, because errors are pushed through <code>H⁻¹</code> onto later columns. Both win on the calibration data: GPTQ was 0.35× of RTN on train but 0.45× on test. It is calibration, not training, and the data you calibrate on is a model parameter.</p>
+</li>
+</ol>
+<h2>4. Three follow-up questions</h2>
+<ol>
+<li>
+<p><strong>Activation quantization (W8A8, W4A8).</strong> We only quantized weights, and the matmul then ran with fp16/fp32 activations. If the activations are int8 too, compute-bound pp can get faster. But activations have extreme per-channel outliers (see SmoothQuant). Which channels are those in Qwen3-4B, and how much PPL/KLD does it cost if you quantize the activations of a single layer?</p>
+</li>
+<li>
+<p><strong>KV-cache quantization.</strong> At long context the KV cache (like the weights) costs bandwidth per token. In llama.cpp this is possible via <code>--cache-type-k</code>/<code>--cache-type-v</code> (for example <code>q8_0</code>, <code>q4_0</code>). From which context length does the KV cache beat the weights in memory and bandwidth for this model, and what is the KLD cost of K versus V (K is often more sensitive)?</p>
+</li>
+<li>
+<p><strong>QAT and the limits of PTQ.</strong> All methods here are <em>post-training</em>. How much of the knee between Q4 and Q3 (and of Q2_K) is fundamental, and how much is a closable gap? You can test this by putting a small quantization-aware finetune (or a light approach such as LoRA on a quantized model, QLoRA style) next to PTQ at the same bpw, and checking whether the KLD curve shifts.</p>
+</li>
+</ol>
+<h2>5. Limitations and what was not tested</h2>
+<ul>
+<li>One model (Qwen3-4B), one dataset (WikiText-2), only PPL and KLD; no tasks, reasoning or code.</li>
+<li>PPL is based on 100 chunks (±0.31 absolute). The <code>PPL(base)</code> that <code>llama-perplexity</code> computes in KL mode from the stored logits file (13.97) deviates 1.2% from a real F16 run (14.14); I use the latter as baseline.</li>
+<li>Speed: 3 repetitions per variant; only valid for this machine.</li>
+<li>The imatrix was built on WikiText-train and evaluated on WikiText-test: same style. A domain-foreign test (code, other languages) was not done, so the gain may be optimistic.</li>
+<li>NF4 and GPTQ were reproduced at the weight level (NF4: MSE, 9 tensors; GPTQ: one layer, output error), not end-to-end. At block 64 NF4 gave 11% lower MSE than Q4_0 but at block 32 no difference (0.99×); the explanation is a hypothesis.</li>
+<li>The PPL increase of Q4_K_M and Q6_K with imatrix while KLD dropped is not explained.</li>
+</ul></main></body></html>

@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Results</title><style>
+:root{--bg:#f7f8fa;--card:#fff;--ink:#1d2330;--mute:#5d6678;--line:#e3e7ee;--acc:#3b5bdb;--accbg:#edf1ff;
+--note:#fff8e6;--noteb:#f0b429;--warn:#fdecec;--warnb:#e03131;--good:#e9f8ee;--code:#f1f3f7}
+@media(prefers-color-scheme:dark){:root{--bg:#12151c;--card:#1a1f2a;--ink:#e6e9f0;--mute:#9aa4b8;--line:#2b3242;
+--acc:#8da2ff;--accbg:#222a45;--note:#2d2716;--noteb:#c99a2e;--warn:#321c1c;--warnb:#e66;--good:#173323;--code:#232a38}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+nav{position:sticky;top:0;z-index:10;background:var(--card);border-bottom:1px solid var(--line);
+display:flex;gap:4px;padding:8px 16px;overflow-x:auto;align-items:center}
+nav b{margin-right:12px;white-space:nowrap}
+nav a{padding:6px 12px;border-radius:8px;color:var(--mute);text-decoration:none;font-size:14px;white-space:nowrap}
+nav a:hover{background:var(--accbg);color:var(--acc)}
+nav a.cur{background:var(--accbg);color:var(--acc);font-weight:600}
+main{max-width:980px;margin:0 auto;padding:32px 20px 80px}
+h1{font-size:2rem;line-height:1.25;margin:0 0 .6em}
+h2{font-size:1.4rem;margin:2.2em 0 .7em;padding-bottom:.3em;border-bottom:2px solid var(--line)}
+h3{font-size:1.1rem;margin:1.6em 0 .5em}
+a{color:var(--acc)}
+p{margin:.7em 0}
+ul,ol{padding-left:1.4em}
+li{margin:.35em 0}
+li::marker{color:var(--acc)}
+code{background:var(--code);padding:.1em .4em;border-radius:5px;font:.88em ui-monospace,SFMono-Regular,Menlo,monospace}
+pre{background:var(--code);border:1px solid var(--line);border-radius:10px;padding:14px 16px;overflow-x:auto;line-height:1.5}
+pre code{background:none;padding:0;font-size:.85em}
+img{max-width:100%;height:auto;background:#fff;border:1px solid var(--line);border-radius:10px;padding:6px;display:block;margin:1em auto}
+.tw{overflow-x:auto;margin:1em 0;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+table{border-collapse:collapse;width:100%;font-size:.88rem}
+th{background:var(--accbg);color:var(--acc);text-align:left;font-weight:600;white-space:nowrap}
+th,td{padding:8px 12px;border-bottom:1px solid var(--line)}
+tbody tr:nth-child(even){background:color-mix(in srgb,var(--line) 25%,transparent)}
+tbody tr:hover{background:var(--accbg)}
+tbody tr:last-child td{border-bottom:none}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tr.hl{background:var(--good)!important}
+td.bad{color:var(--warnb);font-weight:600}
+td.ok{color:#2b8a3e;font-weight:600}
+@media(prefers-color-scheme:dark){td.ok{color:#69db7c}}
+li.note,li.pitfall{list-style:none;margin-left:-1.4em;padding:10px 14px;border-left:4px solid var(--noteb);background:var(--note);border-radius:0 8px 8px 0}
+li.pitfall{border-color:var(--warnb);background:var(--warn)}
+p.note{padding:10px 14px;border-left:4px solid var(--noteb);background:var(--note);border-radius:0 8px 8px 0}
+ol.insights{list-style:none;padding:0;counter-reset:i}
+ol.insights>li{counter-increment:i;background:var(--card);border:1px solid var(--line);border-radius:12px;
+padding:14px 18px 14px 58px;position:relative;margin:12px 0}
+ol.insights>li::before{content:counter(i);position:absolute;left:16px;top:14px;width:28px;height:28px;border-radius:50%;
+background:var(--acc);color:var(--card);font-weight:700;display:grid;place-items:center;font-size:.9rem}
+footer{color:var(--mute);font-size:.8rem;text-align:center;margin-top:3em}
+</style></head>
+<body><nav><b>Quantization study</b><a href="README.html">Overview</a><a href="summary.html">Summary</a><a href="methodology.html">Methodology</a><a href="results.html" class=cur>Results</a><a href="notes.html">Notes</a></nav><main><h1>Results</h1>
+<h2>Step 1: absmax on model.layers.10.mlp.gate_proj.weight (Qwen3-1.7B, shape (6144, 2048))</h2>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>bits</th>
+<th class="n">granularity</th>
+<th class="n">MSE</th>
+<th class="n">max error</th>
+<th class="n">bpw</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>int8</td>
+<td class="n">tensor</td>
+<td class="n">2.700e-06</td>
+<td class="n">0.0028</td>
+<td class="n">8.0000</td>
+</tr>
+<tr>
+<td>int8</td>
+<td class="n">channel</td>
+<td class="n">1.183e-07</td>
+<td class="n">0.0028</td>
+<td class="n">8.0078</td>
+</tr>
+<tr>
+<td>int8</td>
+<td class="n">256</td>
+<td class="n">7.867e-08</td>
+<td class="n">0.0028</td>
+<td class="n">8.0625</td>
+</tr>
+<tr>
+<td>int8</td>
+<td class="n">128</td>
+<td class="n">6.640e-08</td>
+<td class="n">0.0028</td>
+<td class="n">8.1250</td>
+</tr>
+<tr>
+<td>int8</td>
+<td class="n">64</td>
+<td class="n">5.456e-08</td>
+<td class="n">0.0028</td>
+<td class="n">8.2500</td>
+</tr>
+<tr>
+<td>int8</td>
+<td class="n">32</td>
+<td class="n">4.336e-08</td>
+<td class="n">0.0028</td>
+<td class="n">8.5000</td>
+</tr>
+<tr>
+<td>int8</td>
+<td class="n">16</td>
+<td class="n">3.281e-08</td>
+<td class="n">0.0028</td>
+<td class="n">9.0000</td>
+</tr>
+<tr>
+<td>int4</td>
+<td class="n">tensor</td>
+<td class="n">7.386e-04</td>
+<td class="n">0.0515</td>
+<td class="n">4.0000</td>
+</tr>
+<tr>
+<td>int4</td>
+<td class="n">channel</td>
+<td class="n">3.866e-05</td>
+<td class="n">0.0515</td>
+<td class="n">4.0078</td>
+</tr>
+<tr>
+<td>int4</td>
+<td class="n">256</td>
+<td class="n">2.582e-05</td>
+<td class="n">0.0515</td>
+<td class="n">4.0625</td>
+</tr>
+<tr>
+<td>int4</td>
+<td class="n">128</td>
+<td class="n">2.181e-05</td>
+<td class="n">0.0515</td>
+<td class="n">4.1250</td>
+</tr>
+<tr>
+<td>int4</td>
+<td class="n">64</td>
+<td class="n">1.793e-05</td>
+<td class="n">0.0515</td>
+<td class="n">4.2500</td>
+</tr>
+<tr>
+<td>int4</td>
+<td class="n">32</td>
+<td class="n">1.424e-05</td>
+<td class="n">0.0515</td>
+<td class="n">4.5000</td>
+</tr>
+<tr>
+<td>int4</td>
+<td class="n">16</td>
+<td class="n">1.077e-05</td>
+<td class="n">0.0483</td>
+<td class="n">5.0000</td>
+</tr>
+</tbody>
+</table></div>
+<pre><code>Outlier block (index 170864): max|w|=0.3750, median|w|=0.0066, s=0.0536
+  29/32 weights become 0 (int4); values q: [0, 0, 0, 0, -1, 0, -4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -7, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  Typical block: s=0.0098, 4/32 zeros, q range -6..7
+  Fraction of zeros over all blocks: 14.09%
+</code></pre>
+<h2>Step 2: Q8_0 and Q4_0 from scratch (model.layers.10.mlp.gate_proj.weight, Qwen3-1.7B)</h2>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>format</th>
+<th class="n">bytes/block</th>
+<th class="n">bpw</th>
+<th class="n">bytes equal to gguf</th>
+<th class="n">max dequant difference</th>
+<th class="n">MSE</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Q8_0</td>
+<td class="n">34</td>
+<td class="n">8.5</td>
+<td class="n">100.0000%</td>
+<td class="n">0.0e+00</td>
+<td class="n">4.342e-08</td>
+</tr>
+<tr>
+<td>Q4_0</td>
+<td class="n">18</td>
+<td class="n">4.5</td>
+<td class="n">100.0000%</td>
+<td class="n">0.0e+00</td>
+<td class="n">1.115e-05</td>
+</tr>
+<tr>
+<td>int4 symmetric (step 1, block 32)</td>
+<td class="n">-</td>
+<td class="n">4.5</td>
+<td class="n">-</td>
+<td class="n">-</td>
+<td class="n">1.424e-05</td>
+</tr>
+</tbody>
+</table></div>
+<h2>Step 3: Qwen3-4B, GGUF variants (WikiText-2 test, ctx 512, 100 chunks)</h2>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>variant</th>
+<th class="n">size (GB)</th>
+<th class="n">bpw</th>
+<th class="n">PPL</th>
+<th class="n">ΔPPL vs F16</th>
+<th class="n">KLD</th>
+<th class="n">same top-1 %</th>
+<th class="n">pp t/s</th>
+<th class="n">tg t/s</th>
+<th class="n">tg-speedup</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>F16</td>
+<td class="n">8.05</td>
+<td class="n">16.00</td>
+<td class="n">14.136</td>
+<td class="n">+0.0%</td>
+<td class="n">0.0000</td>
+<td class="n">100.0</td>
+<td class="n">557</td>
+<td class="n">15.1</td>
+<td class="n">1.00x</td>
+</tr>
+<tr>
+<td>Q8_0</td>
+<td class="n">4.27</td>
+<td class="n">8.50</td>
+<td class="n">14.181</td>
+<td class="n">+0.3%</td>
+<td class="n">0.0005</td>
+<td class="n">99.0</td>
+<td class="n">533</td>
+<td class="n">28.2</td>
+<td class="n">1.87x</td>
+</tr>
+<tr>
+<td>Q6_K</td>
+<td class="n">3.30</td>
+<td class="n">6.56</td>
+<td class="n">14.180</td>
+<td class="n">+0.3%</td>
+<td class="n">0.0058</td>
+<td class="n">96.6</td>
+<td class="n">506</td>
+<td class="n">36.5</td>
+<td class="n">2.43x</td>
+</tr>
+<tr>
+<td>Q5_K_M</td>
+<td class="n">2.88</td>
+<td class="n">5.73</td>
+<td class="n">14.114</td>
+<td class="n">-0.2%</td>
+<td class="n">0.0174</td>
+<td class="n">94.5</td>
+<td class="n">480</td>
+<td class="n">37.0</td>
+<td class="n">2.46x</td>
+</tr>
+<tr>
+<td>Q4_K_M</td>
+<td class="n">2.49</td>
+<td class="n">4.95</td>
+<td class="n">14.398</td>
+<td class="n">+1.9%</td>
+<td class="n">0.0621</td>
+<td class="n">90.2</td>
+<td class="n">514</td>
+<td class="n">44.9</td>
+<td class="n">2.98x</td>
+</tr>
+<tr>
+<td>Q3_K_M</td>
+<td class="n">2.07</td>
+<td class="n">4.12</td>
+<td class="n">17.297</td>
+<td class="n">+22.4%</td>
+<td class="n">0.2158</td>
+<td class="n">82.7</td>
+<td class="n">491</td>
+<td class="n">37.8</td>
+<td class="n">2.51x</td>
+</tr>
+<tr>
+<td>Q2_K</td>
+<td class="n">1.66</td>
+<td class="n">3.31</td>
+<td class="n">39.237</td>
+<td class="n">+177.6%</td>
+<td class="n">1.0129</td>
+<td class="n">65.2</td>
+<td class="n">505</td>
+<td class="n">47.3</td>
+<td class="n">3.14x</td>
+</tr>
+</tbody>
+</table></div>
+<p><img alt="size vs ppl/kl" src="step3_size_vs_quality.png" /></p>
+<p class="note">Notes on step 3:
+- ΔPPL is relative to the standalone F16 run (14.136). The "PPL(base)" in the KL logs (13.97) is 1.2% lower and therefore not usable as a baseline (cause not investigated; presumably the compressed stored logits).
+- PPL has ±0.31 absolute uncertainty (100 chunks); the ΔPPL between variants is paired and more accurate. Q5_K_M &lt; Q6_K/Q8_0 in PPL is noise; KLD does order them correctly.
+- tg speed: 3 repetitions (-r 3), roughly ±2%.</p>
+<h2>Step 4: imatrix (calibration: WikiText-2 train, 200 chunks x 512; evaluation: test, 100 chunks)</h2>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>type</th>
+<th class="n">size (GB)</th>
+<th class="n">bpw</th>
+<th>PPL</th>
+<th class="n">ΔPPL</th>
+<th class="n">KLD without</th>
+<th class="n">KLD with imatrix</th>
+<th class="n">KLD reduction</th>
+<th class="n">top-1 without</th>
+<th class="n">top-1 with</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Q8_0</td>
+<td class="n">4.28</td>
+<td class="n">8.51</td>
+<td>14.18 → 14.18</td>
+<td class="n">+0.3%</td>
+<td class="n">0.0005</td>
+<td class="n">0.0005</td>
+<td class="n">0%</td>
+<td class="n">99.0</td>
+<td class="n">99.0</td>
+</tr>
+<tr>
+<td>Q6_K</td>
+<td class="n">3.31</td>
+<td class="n">6.58</td>
+<td>14.18 → 14.20</td>
+<td class="n">+0.5%</td>
+<td class="n">0.0058</td>
+<td class="n">0.0047</td>
+<td class="n">19%</td>
+<td class="n">96.6</td>
+<td class="n">96.9</td>
+</tr>
+<tr>
+<td>Q4_K_M</td>
+<td class="n">2.50</td>
+<td class="n">4.97</td>
+<td>14.40 → 14.69</td>
+<td class="n">+3.9%</td>
+<td class="n">0.0621</td>
+<td class="n">0.0422</td>
+<td class="n">32%</td>
+<td class="n">90.2</td>
+<td class="n">91.8</td>
+</tr>
+<tr>
+<td>Q3_K_M</td>
+<td class="n">2.08</td>
+<td class="n">4.13</td>
+<td>17.30 → 15.21</td>
+<td class="n">+7.6%</td>
+<td class="n">0.2158</td>
+<td class="n">0.1403</td>
+<td class="n">35%</td>
+<td class="n">82.7</td>
+<td class="n">85.2</td>
+</tr>
+<tr>
+<td>Q2_K</td>
+<td class="n">1.67</td>
+<td class="n">3.32</td>
+<td>39.24 → 16.33</td>
+<td class="n">+15.6%</td>
+<td class="n">1.0129</td>
+<td class="n">0.4039</td>
+<td class="n">60%</td>
+<td class="n">65.2</td>
+<td class="n">75.1</td>
+</tr>
+<tr>
+<td>IQ2_XS</td>
+<td class="n">1.35</td>
+<td class="n">2.69</td>
+<td>19.98</td>
+<td class="n">+41.3%</td>
+<td class="n">n/a</td>
+<td class="n">0.7626</td>
+<td class="n">n/a</td>
+<td class="n">n/a</td>
+<td class="n">65.8</td>
+</tr>
+</tbody>
+</table></div>
+<p class="note">PPL: 'without → with'. ΔPPL vs F16 (14.136). IQ2_XS does not exist without imatrix.</p>
+<h2>Step 5A: NF4 vs Q4_0 (MSE on weights, Qwen3-1.7B)</h2>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>tensor</th>
+<th class="n">kurtosis</th>
+<th class="n">Q4_0 block32 (4.50 bpw)</th>
+<th class="n">NF4 block32 (4.50)</th>
+<th class="n">NF4/Q4_0</th>
+<th class="n">Q4_0 block64 (4.25)</th>
+<th class="n">NF4 block64 (4.25)</th>
+<th class="n">NF4/Q4_0</th>
+<th class="n">NF4 block64 + DQ (4.13)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>L10.self_attn.q_proj</td>
+<td class="n">4.6</td>
+<td class="n">9.063e-06</td>
+<td class="n">8.975e-06</td>
+<td class="n">0.99</td>
+<td class="n">1.129e-05</td>
+<td class="n">1.009e-05</td>
+<td class="n">0.89</td>
+<td class="n">1.009e-05</td>
+</tr>
+<tr>
+<td>L10.self_attn.k_proj</td>
+<td class="n">4.0</td>
+<td class="n">8.291e-06</td>
+<td class="n">8.284e-06</td>
+<td class="n">1.00</td>
+<td class="n">1.026e-05</td>
+<td class="n">9.285e-06</td>
+<td class="n">0.90</td>
+<td class="n">9.287e-06</td>
+</tr>
+<tr>
+<td>L10.self_attn.v_proj</td>
+<td class="n">3.4</td>
+<td class="n">9.147e-06</td>
+<td class="n">8.992e-06</td>
+<td class="n">0.98</td>
+<td class="n">1.130e-05</td>
+<td class="n">1.010e-05</td>
+<td class="n">0.89</td>
+<td class="n">1.010e-05</td>
+</tr>
+<tr>
+<td>L10.self_attn.o_proj</td>
+<td class="n">4.5</td>
+<td class="n">7.529e-06</td>
+<td class="n">7.608e-06</td>
+<td class="n">1.01</td>
+<td class="n">9.250e-06</td>
+<td class="n">8.492e-06</td>
+<td class="n">0.92</td>
+<td class="n">8.493e-06</td>
+</tr>
+<tr>
+<td>L10.mlp.gate_proj</td>
+<td class="n">4.2</td>
+<td class="n">1.115e-05</td>
+<td class="n">1.099e-05</td>
+<td class="n">0.99</td>
+<td class="n">1.392e-05</td>
+<td class="n">1.241e-05</td>
+<td class="n">0.89</td>
+<td class="n">1.241e-05</td>
+</tr>
+<tr>
+<td>L10.mlp.up_proj</td>
+<td class="n">3.7</td>
+<td class="n">9.287e-06</td>
+<td class="n">9.108e-06</td>
+<td class="n">0.98</td>
+<td class="n">1.159e-05</td>
+<td class="n">1.029e-05</td>
+<td class="n">0.89</td>
+<td class="n">1.029e-05</td>
+</tr>
+<tr>
+<td>L10.mlp.down_proj</td>
+<td class="n">4.6</td>
+<td class="n">8.883e-06</td>
+<td class="n">8.229e-06</td>
+<td class="n">0.93</td>
+<td class="n">1.138e-05</td>
+<td class="n">9.485e-06</td>
+<td class="n">0.83</td>
+<td class="n">9.486e-06</td>
+</tr>
+<tr>
+<td>L0.mlp.gate_proj</td>
+<td class="n">3.8</td>
+<td class="n">1.149e-05</td>
+<td class="n">1.143e-05</td>
+<td class="n">0.99</td>
+<td class="n">1.429e-05</td>
+<td class="n">1.284e-05</td>
+<td class="n">0.90</td>
+<td class="n">1.284e-05</td>
+</tr>
+<tr>
+<td>L27.mlp.gate_proj</td>
+<td class="n">3.9</td>
+<td class="n">1.044e-05</td>
+<td class="n">1.050e-05</td>
+<td class="n">1.01</td>
+<td class="n">1.292e-05</td>
+<td class="n">1.176e-05</td>
+<td class="n">0.91</td>
+<td class="n">1.177e-05</td>
+</tr>
+</tbody>
+</table></div>
+<p>Mean NF4/Q4_0 MSE ratio: block32 0.99, block64 0.89. Kurtosis: normal = 3.</p>
+<h2>Step 5B: GPTQ-light vs RTN (L10 gate_proj, int4, block 32, calibration 32768 train tokens, damp 0.01)</h2>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>method</th>
+<th class="n">weight MSE</th>
+<th class="n">output error (test)</th>
+<th class="n">relative output error (test)</th>
+<th class="n">relative output error (train)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>RTN</td>
+<td class="n">1.424e-05</td>
+<td class="n">9.061e-03</td>
+<td class="n">3.922e-03</td>
+<td class="n">3.871e-03</td>
+</tr>
+<tr>
+<td>GPTQ</td>
+<td class="n">2.040e-05</td>
+<td class="n">4.095e-03</td>
+<td class="n">1.773e-03</td>
+<td class="n">1.354e-03</td>
+</tr>
+</tbody>
+</table></div>
+<p>GPTQ/RTN: weight-MSE 1.43x, output error (test) 0.45x</p></main></body></html>

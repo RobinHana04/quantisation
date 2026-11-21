@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Research methodology</title><style>
+:root{--bg:#f7f8fa;--card:#fff;--ink:#1d2330;--mute:#5d6678;--line:#e3e7ee;--acc:#3b5bdb;--accbg:#edf1ff;
+--note:#fff8e6;--noteb:#f0b429;--warn:#fdecec;--warnb:#e03131;--good:#e9f8ee;--code:#f1f3f7}
+@media(prefers-color-scheme:dark){:root{--bg:#12151c;--card:#1a1f2a;--ink:#e6e9f0;--mute:#9aa4b8;--line:#2b3242;
+--acc:#8da2ff;--accbg:#222a45;--note:#2d2716;--noteb:#c99a2e;--warn:#321c1c;--warnb:#e66;--good:#173323;--code:#232a38}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+nav{position:sticky;top:0;z-index:10;background:var(--card);border-bottom:1px solid var(--line);
+display:flex;gap:4px;padding:8px 16px;overflow-x:auto;align-items:center}
+nav b{margin-right:12px;white-space:nowrap}
+nav a{padding:6px 12px;border-radius:8px;color:var(--mute);text-decoration:none;font-size:14px;white-space:nowrap}
+nav a:hover{background:var(--accbg);color:var(--acc)}
+nav a.cur{background:var(--accbg);color:var(--acc);font-weight:600}
+main{max-width:980px;margin:0 auto;padding:32px 20px 80px}
+h1{font-size:2rem;line-height:1.25;margin:0 0 .6em}
+h2{font-size:1.4rem;margin:2.2em 0 .7em;padding-bottom:.3em;border-bottom:2px solid var(--line)}
+h3{font-size:1.1rem;margin:1.6em 0 .5em}
+a{color:var(--acc)}
+p{margin:.7em 0}
+ul,ol{padding-left:1.4em}
+li{margin:.35em 0}
+li::marker{color:var(--acc)}
+code{background:var(--code);padding:.1em .4em;border-radius:5px;font:.88em ui-monospace,SFMono-Regular,Menlo,monospace}
+pre{background:var(--code);border:1px solid var(--line);border-radius:10px;padding:14px 16px;overflow-x:auto;line-height:1.5}
+pre code{background:none;padding:0;font-size:.85em}
+img{max-width:100%;height:auto;background:#fff;border:1px solid var(--line);border-radius:10px;padding:6px;display:block;margin:1em auto}
+.tw{overflow-x:auto;margin:1em 0;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+table{border-collapse:collapse;width:100%;font-size:.88rem}
+th{background:var(--accbg);color:var(--acc);text-align:left;font-weight:600;white-space:nowrap}
+th,td{padding:8px 12px;border-bottom:1px solid var(--line)}
+tbody tr:nth-child(even){background:color-mix(in srgb,var(--line) 25%,transparent)}
+tbody tr:hover{background:var(--accbg)}
+tbody tr:last-child td{border-bottom:none}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tr.hl{background:var(--good)!important}
+td.bad{color:var(--warnb);font-weight:600}
+td.ok{color:#2b8a3e;font-weight:600}
+@media(prefers-color-scheme:dark){td.ok{color:#69db7c}}
+li.note,li.pitfall{list-style:none;margin-left:-1.4em;padding:10px 14px;border-left:4px solid var(--noteb);background:var(--note);border-radius:0 8px 8px 0}
+li.pitfall{border-color:var(--warnb);background:var(--warn)}
+p.note{padding:10px 14px;border-left:4px solid var(--noteb);background:var(--note);border-radius:0 8px 8px 0}
+ol.insights{list-style:none;padding:0;counter-reset:i}
+ol.insights>li{counter-increment:i;background:var(--card);border:1px solid var(--line);border-radius:12px;
+padding:14px 18px 14px 58px;position:relative;margin:12px 0}
+ol.insights>li::before{content:counter(i);position:absolute;left:16px;top:14px;width:28px;height:28px;border-radius:50%;
+background:var(--acc);color:var(--card);font-weight:700;display:grid;place-items:center;font-size:.9rem}
+footer{color:var(--mute);font-size:.8rem;text-align:center;margin-top:3em}
+</style></head>
+<body><nav><b>Quantization study</b><a href="README.html">Overview</a><a href="summary.html">Summary</a><a href="methodology.html" class=cur>Methodology</a><a href="results.html">Results</a><a href="notes.html">Notes</a></nav><main><h1>Research methodology</h1>
+<h2>Research question</h2>
+<p>How much quality do you lose when you shrink the weights of Qwen3-4B, and what does that buy in memory and speed? In other words: the trade-off between <strong>size, quality and speed</strong>, per quantization type and per method.</p>
+<h2>Setup</h2>
+<ul>
+<li><strong>Model:</strong> Qwen3-4B (main model), Qwen3-1.7B (fast experiments in steps 1 and 2)</li>
+<li><strong>Baseline:</strong> F16 GGUF of Qwen3-4B. Everything is compared against it.</li>
+<li><strong>Hardware:</strong> MacBook Pro M3 Pro, 18 GB unified memory, Metal backend</li>
+<li><strong>Evaluation data:</strong> WikiText-2 test split</li>
+<li><strong>Calibration data (imatrix):</strong> WikiText-2 train split. Never the test split, so the imatrix cannot "peek".</li>
+</ul>
+<h2>Metrics</h2>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>What it tells you</th>
+<th>Tool</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MSE / max error</td>
+<td>Distance between reconstructed weights x̂ and original x (one matrix, no model)</td>
+<td>own NumPy code (step 1)</td>
+</tr>
+<tr>
+<td>bpw (bits per weight)</td>
+<td>Actual storage cost including scales: file size × 8 / number of weights</td>
+<td>calculation</td>
+</tr>
+<tr>
+<td>File size</td>
+<td>Memory cost</td>
+<td><code>ls</code></td>
+</tr>
+<tr>
+<td>Perplexity (PPL)</td>
+<td>exp(mean negative log-likelihood) on WikiText-2 test. Lower is better.</td>
+<td><code>llama-perplexity</code></td>
+</tr>
+<tr>
+<td>KL divergence</td>
+<td>Deviation of the full next-token distribution from F16, averaged over all positions. More sensitive than PPL. Also "same top token %".</td>
+<td><code>llama-perplexity --kl-divergence-base</code> / <code>--kl-divergence</code></td>
+</tr>
+<tr>
+<td>pp (tokens/s)</td>
+<td>Prompt processing, compute-bound</td>
+<td><code>llama-bench</code></td>
+</tr>
+<tr>
+<td>tg (tokens/s)</td>
+<td>Token generation, memory-bandwidth-bound</td>
+<td><code>llama-bench</code></td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Why PPL and KL?</strong> PPL only looks at the probability of the correct token, and errors can cancel out. KL directly measures how different the behaviour is from the original.</p>
+<h2>Variables</h2>
+<ol>
+<li>Block size and scale granularity: per tensor, channel, block 256/128/64/32/16 (step 1)</li>
+<li>Quantization type: Q8_0, Q6_K, Q5_K_M, Q4_K_M, Q3_K_M, Q2_K (step 3)</li>
+<li>imatrix on or off, and calibration data (step 4)</li>
+<li>Other methods: NF4, GPTQ (step 5, optional, reduced scope; see <a href="summary.html"><code>summary.html</code></a>)</li>
+</ol>
+<h2>Hypotheses (stated in advance, to be tested)</h2>
+<ul>
+<li>Q8_0 is practically lossless; from about Q4 the degradation becomes noticeable; Q2_K is bad.</li>
+<li>Smaller quants are faster in tg, roughly proportional to size, but not in pp.</li>
+<li>imatrix helps mainly at low bits (Q2_K, IQ2_XS), hardly at Q8_0 and Q6_K.</li>
+<li>Smaller blocks give lower MSE, but cost more bpw because of scale overhead.</li>
+</ul>
+<h2>Workflow and reproducibility</h2>
+<ul>
+<li>One script per experiment in <code>experiments/</code></li>
+<li>Results as tables in <a href="results.html"><code>results.html</code></a></li>
+<li>Key lesson per step in <a href="notes.html"><code>notes.html</code></a></li>
+<li>Final summary in <a href="summary.html"><code>summary.html</code></a></li>
+<li>Everything in the project folder: venv in <code>.venv</code>, llama.cpp in <code>llama.cpp/</code> (commit <code>690b87d</code>); these and the model/data folders are gitignored</li>
+<li>For every experiment: first a prediction, then the measurement, then the comparison</li>
+</ul>
+<h2>Limitations</h2>
+<ul>
+<li>One model and one dataset: no general laws.</li>
+<li>PPL on WikiText says little about tasks such as reasoning or code.</li>
+<li>Speed only holds for this machine and fluctuates with temperature and background processes. Repeat measurements and report the mean.</li>
+<li>Qwen3-8B does not fit as an F16 baseline, so no KL divergence for that model.</li>
+</ul></main></body></html>
