@@ -1,0 +1,8 @@
+# groot / herleidbaar
+.venv/
+llama.cpp/
+models/
+gguf/
+data/
+__pycache__/
+.DS_Store
